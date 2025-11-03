@@ -54,6 +54,19 @@ int centered[8];
 // Centerpoints store the zero position of the joysticks
 int centerPoints[8];
 
+
+
+
+
+// === FN1+FN2 zero hotkey state ===
+static bool g_fnZeroPending = false;
+static unsigned long g_fnZeroStart = 0;
+static unsigned long g_fnZeroCooldownUntil = 0;
+
+
+
+
+
 // Offsets store the drift-compensation values of the joysticks
 int offsets[8];
 
@@ -303,6 +316,57 @@ void loop() {
   evalKeys(keyVals, keyOut, keyState);
   #endif
 
+
+
+
+
+
+
+
+// === Build HID keys with FN1+FN2 zero hotkey ===
+uint8_t hidKeys[NUMKEYS];
+memcpy(hidKeys, keyState, NUMKEYS);
+
+// Требуются индексы Fn из config.h:
+const bool hasFn1 = (KEY_FN1_IDX < NUMKEYS) ? (hidKeys[KEY_FN1_IDX] != 0) : false;
+const bool hasFn2 = (KEY_FN2_IDX < NUMKEYS) ? (hidKeys[KEY_FN2_IDX] != 0) : false;
+
+// Никаких других базовых кнопок в момент удержания:
+bool anyOther = false;
+for (int i = 0; i < NUMHIDKEYS; ++i) {
+  if (i == KEY_FN1_IDX || i == KEY_FN2_IDX) continue;
+  if (hidKeys[i]) { anyOther = true; break; }
+}
+
+// Армирование и срабатывание
+if (hasFn1 && hasFn2 && !anyOther && millis() >= g_fnZeroCooldownUntil) {
+  if (!g_fnZeroPending) {
+    g_fnZeroPending = true;
+    g_fnZeroStart = millis();
+  }
+  // Пока ждём вторую секунду — подавляем любые HID-кнопки полностью:
+  for (int i = 0; i < NUMKEYS; ++i) hidKeys[i] = 0;
+
+  if (millis() - g_fnZeroStart >= FN_ZERO_HOLD_MS) {
+    // Тихое зануление центров (НЕ трогаем min/max, сенсы и т.д.)
+    busyZeroing(centerPoints, FN_ZERO_SAMPLES, /*debugPrint=*/false);
+    g_fnZeroPending = false;
+    g_fnZeroCooldownUntil = millis() + FN_ZERO_COOLDOWN_MS;
+  }
+} else {
+  g_fnZeroPending = false;
+}
+
+
+
+
+
+
+
+
+
+
+
   // The encoder wheel shall be treated as a key
   #if ROTARY_KEYS > 0 
   // The encoder wheel shall be treated as a key
@@ -354,7 +418,8 @@ void loop() {
     debugOutput4(velocity, keyOut);
   }
 
-  SpaceMouseHID.send_command(velocity[ROTX], velocity[ROTY], velocity[ROTZ], velocity[TRANSX], velocity[TRANSY], velocity[TRANSZ], keyState, debug);
+  // SpaceMouseHID.send_command(velocity[ROTX], velocity[ROTY], velocity[ROTZ], velocity[TRANSX], velocity[TRANSY], velocity[TRANSZ], keyState, debug);
+  SpaceMouseHID.send_command(velocity[ROTX], velocity[ROTY], velocity[ROTZ], velocity[TRANSX], velocity[TRANSY], velocity[TRANSZ], hidKeys, debug);
 
   // update and report at what frequency the loop is running
   if(debug == 7){

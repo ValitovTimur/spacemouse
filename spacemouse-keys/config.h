@@ -158,16 +158,28 @@ Debug Modes:
 
 
 // --- Combo timing (tunable) ---
-#define FN_COMBO_WINDOW_MS   180   // окно ожидания второй кнопки (90..130 подбирай)
-#define FN_STICKY_MS         140   // "липкость" Fn после отпускания (100..180)
-#define KEY_PULSE_FRAMES       1   // сколько HID-репортов держать "нажатой" (2..4)
-// --- Combo timing (tuneable) ---
-#ifndef FN_COMBO_WINDOW_MS
-#  define FN_COMBO_WINDOW_MS   110   // окно ожидания второй кнопки (80..130 под себя)
-#endif
-#ifndef FN_SOLO_DELAY_MS
+#undef FN_COMBO_WINDOW_MS
+#  define FN_COMBO_WINDOW_MS   180   // окно ожидания второй кнопки (90..130 подбирай)
+
+#undef FN_STICKY_MS    
+#  define FN_STICKY_MS         140   // "липкость" Fn после отпускания (100..180)
+
+#undef KEY_PULSE_FRAMES
+#  define KEY_PULSE_FRAMES       1   // сколько HID-репортов держать "нажатой" (2..4)
+
+#undef FN_SOLO_DELAY_MS
 #  define FN_SOLO_DELAY_MS      40   // небольшая задержка, чтобы Fn-соло не стреляла при попытке комбо
-#endif
+
+// --- FN1+FN2 zero hotkey timing (safe defaults) ---
+#undef FN_ZERO_HOLD_MS
+#  define FN_ZERO_HOLD_MS       2000   // сколько держать Fn1+Fn2, чтобы сработало зануление
+
+#undef FN_ZERO_SAMPLES
+#  define FN_ZERO_SAMPLES        800   // сколько выборок собрать при занулении (~0.8 с на 1 кГц цикла)
+
+#undef FN_ZERO_COOLDOWN_MS
+#  define FN_ZERO_COOLDOWN_MS    2000   // защита от повторного триггера сразу после срабатывания
+
 
 
 // Map first three pins to 1/2/3
