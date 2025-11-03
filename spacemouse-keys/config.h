@@ -130,14 +130,15 @@ Debug Modes:
 
 /* Key Support
 =============== */
-#define NUMKEYS 3 // 0
+#define NUMKEYS 5//3 // 0
 
 #define KEYLIST \
-    {0, 1, 2}
+    {0, 1, 2, 14, 16} //{0, 1, 2}
+
 
 /* Report KEYS over USB HID to the PC
  ------------------------------------- */
-#define NUMHIDKEYS 3 // 0
+#define NUMHIDKEYS 5 //3 // 0
 
 #define SM_MENU 0
 #define SM_FIT 1
@@ -155,8 +156,35 @@ Debug Modes:
 #define SM_CTRL 25
 #define SM_ROT 26
 
+
+// --- Combo timing (tunable) ---
+#define FN_COMBO_WINDOW_MS   180   // окно ожидания второй кнопки (90..130 подбирай)
+#define FN_STICKY_MS         140   // "липкость" Fn после отпускания (100..180)
+#define KEY_PULSE_FRAMES       1   // сколько HID-репортов держать "нажатой" (2..4)
+// --- Combo timing (tuneable) ---
+#ifndef FN_COMBO_WINDOW_MS
+#  define FN_COMBO_WINDOW_MS   110   // окно ожидания второй кнопки (80..130 под себя)
+#endif
+#ifndef FN_SOLO_DELAY_MS
+#  define FN_SOLO_DELAY_MS      40   // небольшая задержка, чтобы Fn-соло не стреляла при попытке комбо
+#endif
+
+
 // Map first three pins to 1/2/3
-#define BUTTONLIST {SM_2, SM_1, SM_3} // << было {SM_T, SM_R, SM_F}
+// #define BUTTONLIST {SM_2, SM_1, SM_3} // << было {SM_T, SM_R, SM_F}
+// Индексы модификаторов в массиве keyState[]
+#define KEY_FN1_IDX 3
+#define KEY_FN2_IDX 4
+
+// --- Базовый слой (без Fn): 1,2,3 ---
+#define BUTTONLIST      {SM_2,    SM_1,    SM_3,    SM_SHFT, SM_4}  // Fn1 solo=MENU, Fn2 solo=ESC
+
+// --- Слой Fn1 (Fn1 + 1/2/3) ---
+#define BUTTONLIST_FN1  {SM_FIT,  SM_MENU, SM_ROT,  SM_SHFT, SM_4}
+
+// --- Слой Fn2 (Fn2 + 1/2/3) ---
+#define BUTTONLIST_FN2  {SM_CTRL, SM_ESC, SM_ALT,   SM_SHFT, SM_4}
+
 
 /* Kill-Key Feature
 -------------------- */

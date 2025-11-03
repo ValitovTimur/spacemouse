@@ -297,36 +297,198 @@ bool SpaceMouseHID_::jiggleValues(uint8_t val[6], bool lastBit) {
 }
 
 
-#if (NUMKEYS > 0)
-// Takes the data in keys and sort them into the bits of keyData
-// Which key from keyData should belong to which byte is defined in bitNumber = BUTTONLIST see config.h
-void SpaceMouseHID_::prepareKeyBytes(uint8_t *keys, uint8_t *keyData, int debug) {
-  for (int i = 0; i < 4; i++) {
-	  // init or empty this array
-    keyData[i] = 0;
+
+
+
+
+
+
+void SpaceMouseHID_::prepareKeyBytes(uint8_t *keys, uint8_t *keyData, int /*debug*/)
+{
+  // Обнуляем выход
+  for (int i = 0; i < 4; i++) keyData[i] = 0;
+
+  // Защита индексов Fn
+  #ifndef KEY_FN1_IDX
+  #  define KEY_FN1_IDX 255
+  #endif
+  #ifndef KEY_FN2_IDX
+  #  define KEY_FN2_IDX 255
+  #endif
+
+  // Быстрые хелперы
+  auto isFnIdx = [](int i)->bool {
+    return (i == KEY_FN1_IDX) || (i == KEY_FN2_IDX);
+  };
+  auto isBaseIdx = [&](int i)->bool {
+    // работаем только в диапазоне HID-кнопок
+    return (i >= 0) && (i < NUMHIDKEYS) && !isFnIdx(i);
+  };
+
+  const bool fn1Now = (KEY_FN1_IDX < NUMKEYS) ? (keys[KEY_FN1_IDX] != 0) : false;
+  const bool fn2Now = (KEY_FN2_IDX < NUMKEYS) ? (keys[KEY_FN2_IDX] != 0) : false;
+
+  unsigned long now = millis();
+
+  // Карты отображения (из config.h)
+  static const uint8_t baseMap[NUMHIDKEYS] = BUTTONLIST;
+  #ifdef BUTTONLIST_FN1
+  static const uint8_t fn1Map[NUMHIDKEYS]  = BUTTONLIST_FN1;
+  #endif
+  #ifdef BUTTONLIST_FN2
+  static const uint8_t fn2Map[NUMHIDKEYS]  = BUTTONLIST_FN2;
+  #endif
+
+  // --- Состояние (живёт между кадрами) ---
+  // prevPhys: прошлое физическое состояние по индексам keyState[]
+  static uint8_t prevPhys[NUMKEYS] = {0};
+
+  // pend[i]: база нажата, ждём вторую (Fn) в окне
+  static uint8_t pend[NUMHIDKEYS] = {0};
+  static unsigned long tPend[NUMHIDKEYS] = {0};
+
+  // active[i]: 0 — нет, 1 — база, 2 — Fn1-комбо, 3 — Fn2-комбо (пока держим кнопку)
+  static uint8_t active[NUMHIDKEYS] = {0};
+
+  // Fn-solo: pending/active отдельно для Fn1/Fn2
+  static uint8_t  fnSoloPend[2] = {0,0};
+  static uint8_t  fnSoloAct [2] = {0,0};
+  static unsigned long tFnPend[2] = {0,0};
+  static uint8_t  fn1Prev = 0, fn2Prev = 0;
+
+  // Есть ли сейчас какая-то «база» физически зажата
+  bool anyBasePhysDown = false;
+  for (int i = 0; i < NUMHIDKEYS; ++i) {
+    if (isBaseIdx(i) && keys[i]) { anyBasePhysDown = true; break; }
   }
 
-  for (int i = 0; i < NUMHIDKEYS; i++) {
-    // check for every key if it is pressed
-    if (keys[i]) {
-      // set the according bit in the data bytes
-      // byte no.: bitNumber[i] / 8
-      // bit no.:  bitNumber[i] modulo 8
-      keyData[(bitNumber[i] / 8)] = (1 << (bitNumber[i] % 8));
-      if (debug == 8) {
-        // debug the key board outputs
-        Serial.print("bitnumber: ");
-        Serial.print(bitNumber[i]);
-        Serial.print(" -> keyData[");
-        Serial.print((bitNumber[i] / 8));
-        Serial.print("] = ");
-        Serial.print("0x");
-        Serial.println(keyData[(bitNumber[i] / 8)], HEX);
+  // --- Обработка базовых клавиш (press/hold/release + ожидание окна) ---
+  for (int i = 0; i < NUMHIDKEYS; ++i) {
+    if (!isBaseIdx(i)) continue;
+
+    bool nowDown = keys[i] != 0;
+    bool wasDown = (i < NUMKEYS) ? (prevPhys[i] != 0) : false;
+
+    // фронт
+    if (nowDown && !wasDown) {
+      pend[i] = 1;
+      tPend[i] = now;
+      active[i] = 0; // ещё не решили — база или комбо
+    }
+
+    // решение "что это": комбо/база
+    if (pend[i]) {
+      if (fn1Now)      { active[i] = 2; pend[i] = 0; }        // Fn1 + base => комбо
+      else if (fn2Now) { active[i] = 3; pend[i] = 0; }        // Fn2 + base => комбо
+      else if ((now - tPend[i]) >= FN_COMBO_WINDOW_MS) {
+        active[i] = 1; pend[i] = 0;                           // окно прошло — это одиночная база
       }
     }
+
+    // отпускание
+    if (!nowDown && wasDown) {
+      pend[i]   = 0;
+      active[i] = 0;
+    }
+
+    if (i < NUMKEYS) prevPhys[i] = nowDown ? 1 : 0;
+  }
+
+  // --- Fn-solo логика (чтобы Fn в одиночку жила как отдельная кнопка,
+  //                     но НЕ мешала комбо и не давала "лишний клик") ---
+  // Fn1
+  if (KEY_FN1_IDX < NUMKEYS) {
+    bool nowFn = fn1Now;
+    if (nowFn && !fn1Prev) { fnSoloPend[0] = 1; tFnPend[0] = now; }
+    if (!nowFn && fn1Prev) { fnSoloPend[0] = 0; fnSoloAct[0] = 0; }
+
+    // если появилась/висит любая база (нажата/pend/active) — гасим Fn-solo
+    bool baseBusy = anyBasePhysDown;
+    if (!baseBusy) {
+      for (int i = 0; i < NUMHIDKEYS; ++i) {
+        if (!isBaseIdx(i)) continue;
+        if (pend[i] || active[i]) { baseBusy = true; break; }
+      }
+    }
+
+    if (fnSoloPend[0]) {
+      if (baseBusy) {
+        fnSoloPend[0] = 0; fnSoloAct[0] = 0;
+      } else if ((now - tFnPend[0]) >= FN_SOLO_DELAY_MS) {
+        fnSoloAct[0] = 1; // включаем соло-функцию Fn1
+      }
+    } else if (!nowFn) {
+      fnSoloAct[0] = 0;
+    }
+    fn1Prev = nowFn ? 1 : 0;
+  }
+
+  // Fn2
+  if (KEY_FN2_IDX < NUMKEYS) {
+    bool nowFn = fn2Now;
+    if (nowFn && !fn2Prev) { fnSoloPend[1] = 1; tFnPend[1] = now; }
+    if (!nowFn && fn2Prev) { fnSoloPend[1] = 0; fnSoloAct[1] = 0; }
+
+    bool baseBusy = anyBasePhysDown;
+    if (!baseBusy) {
+      for (int i = 0; i < NUMHIDKEYS; ++i) {
+        if (!isBaseIdx(i)) continue;
+        if (pend[i] || active[i]) { baseBusy = true; break; }
+      }
+    }
+
+    if (fnSoloPend[1]) {
+      if (baseBusy) {
+        fnSoloPend[1] = 0; fnSoloAct[1] = 0;
+      } else if ((now - tFnPend[1]) >= FN_SOLO_DELAY_MS) {
+        fnSoloAct[1] = 1; // включаем соло-функцию Fn2
+      }
+    } else if (!nowFn) {
+      fnSoloAct[1] = 0;
+    }
+    fn2Prev = nowFn ? 1 : 0;
+  }
+
+  // --- Сборка HID битов ---
+  // 1) Активные базовые/комбо (строго ОДИН режим на кнопку)
+  for (int i = 0; i < NUMHIDKEYS; ++i) {
+    if (!isBaseIdx(i)) continue;
+    uint8_t mode = active[i];
+    if (!mode) continue;
+
+    uint8_t bn;
+    if (mode == 1) {
+      bn = baseMap[i];
+    } else if (mode == 2) {
+      #ifdef BUTTONLIST_FN1
+        bn = fn1Map[i];
+      #else
+        bn = baseMap[i]; // fallback, если слой не объявлен
+      #endif
+    } else { // mode == 3
+      #ifdef BUTTONLIST_FN2
+        bn = fn2Map[i];
+      #else
+        bn = baseMap[i];
+      #endif
+    }
+    keyData[bn / 8] |= (uint8_t)(1u << (bn % 8));
+  }
+
+  // 2) Fn-соло (если активна и не мешает комбо)
+  if ((KEY_FN1_IDX < NUMHIDKEYS) && fnSoloAct[0]) {
+    uint8_t bn = baseMap[KEY_FN1_IDX];
+    keyData[bn / 8] |= (uint8_t)(1u << (bn % 8));
+  }
+  if ((KEY_FN2_IDX < NUMHIDKEYS) && fnSoloAct[1]) {
+    uint8_t bn = baseMap[KEY_FN2_IDX];
+    keyData[bn / 8] |= (uint8_t)(1u << (bn % 8));
   }
 }
-#endif
+
+
+
+
 
 
 SpaceMouseHID_ SpaceMouseHID;
