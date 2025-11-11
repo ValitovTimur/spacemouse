@@ -71,9 +71,11 @@ modifierFunctions/
 ## Сборка и прошивка (Arduino IDE)
 
 1. **Установить пакет SparkFun AVR Boards**
-   Arduino IDE → *Board Manager* → найти **SparkFun AVR Boards** → *Install*.
+   Сперва в настройках Arduino IDE в поле "Additional boards manager URLs" добавить ссылку `https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manager/package_sparkfun_index.json`
 
-2. **Заменить `boards.txt` из этого форка**
+   Далее: Arduino IDE → *Board Manager* → найти **SparkFun AVR Boards** → *Install*.
+
+3. **Заменить `boards.txt` из этого форка**
    В корне репозитория лежит `boards.txt`. Скопируй его **поверх** одноимённого файла в директории установленного пакета SparkFun AVR Boards (путь зависит от ОС/IDE), затем **перезапусти Arduino IDE**.
 
    Примеры путей:
@@ -83,17 +85,17 @@ modifierFunctions/
    * **Linux:** `~/.arduino15/packages/SparkFun/hardware/avr/<version>/boards.txt`
    * **macOS:** `~/Library/Arduino15/packages/SparkFun/hardware/avr/<version>/boards.txt`
 
-3. **Открыть проект**
+4. **Открыть проект**
    `spacemouse-keys/spacemouse-keys.ino`.
 
-4. **Выбрать плату и порт**
+5. **Выбрать плату и порт**
    Tools → Board → **SparkFun AVR Boards → Spacemouse (ATmega32U4, 5 V, 16 MHz)**.
    Tools → Port → выбрать твой COM/tty.
 
-5. **Собрать и прошить**
+6. **Собрать и прошить**
    Нажать **Upload**. Если IDE не поймала окно бутлоадера, дважды быстро нажми **Reset** на Pro Micro (режим Caterina) и повтори Upload.
 
-6. **Проверка через Serial** (необязательно)
+7. **Проверка через Serial** (необязательно)
    Открой Serial Monitor (115200 бод). Меню отладок/параметров — пункт **30**.
 
 > **Важно:** конфигурация (`config.h`), терминальное меню (30), ProgMode и Serial‑API — **без изменений** и полностью совместимы с апстримом.
