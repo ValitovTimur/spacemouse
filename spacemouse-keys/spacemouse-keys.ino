@@ -7,6 +7,18 @@
 
 #include <Arduino.h>
 
+
+
+// PATCH
+// Filtering algoritms for output data
+#include "axis_filter.h" 
+// Фильтры для «осевых» значений после дедзоны (до MOD)
+AxisFilter g_f_centered[6];  // порядок: TX,TY,TZ,RX,RY,RZ
+// (опционально) Фильтры для «скоростей» после MOD/микса — если захочешь еще чуть приглушить пик
+AxisFilter g_f_vel[6];
+
+
+
 // The user specific settings, like pin mappings or special configuration variables and sensitivities are stored in config.h.
 // Please open config_sample.h, adjust your settings and save it as config.h
 #include "config.h"
