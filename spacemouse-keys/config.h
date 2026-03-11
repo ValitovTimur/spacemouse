@@ -73,8 +73,11 @@ Debug Modes:
 /* Third calibration: Getting MIN and MAX values
 ================================================= */
 //              {HES0, HES1, HES2, HES3, HES6, HES7, HES8, HES9}
+// #define MINVALS {-335, -323, -379, -305, -388, -305, -381, -422}
+// #define MAXVALS {118, 123, 144, 143, 113, 161, 103, 135}
 #define MINVALS {-335, -323, -379, -305, -388, -305, -381, -422}
 #define MAXVALS {118, 123, 144, 143, 113, 161, 103, 135}
+
 
 /* Fourth calibration: Sensitivity
 =================================== */
