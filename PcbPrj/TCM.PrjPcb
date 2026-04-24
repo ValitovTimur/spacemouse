@@ -117,6 +117,10 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=BPLFUNFX
 
+[GeneratedDocument1]
+DocumentPath=Project Outputs for TCM\Design Rule Check - TCM-01.html
+DItemRevisionGUID=
+
 [Configuration1]
 Name=Sources
 ParameterCount=0
@@ -1340,6 +1344,33 @@ SelectedOnly=0
 UpdateVariants=1
 UpdateToLatestRevision=1
 PartTypes=0
+
+[NetInfos]
+Net1=NetName=+3v3|NetColor=$006E6EFF
+Net2=NetName=+5v|NetColor=$00FFF0FF
+Net3=NetName=CH|NetColor=$00FFFF6E
+Net4=NetName=CH1-1|NetColor=clYellow
+Net5=NetName=CH1-2|NetColor=clYellow
+Net6=NetName=CH2-1|NetColor=clYellow
+Net7=NetName=CH2-2|NetColor=clYellow
+Net8=NetName=CH3-1|NetColor=clYellow
+Net9=NetName=CH3-2|NetColor=clYellow
+Net10=NetName=CH4-1|NetColor=clYellow
+Net11=NetName=CH4-2|NetColor=clYellow
+Net12=NetName=GND|NetColor=$00FFF0FF
+Net13=NetName=MUXAddr_0|NetColor=$00FF6EFF
+Net14=NetName=MUXAddr_1|NetColor=$00FF6EFF
+Net15=NetName=MUXAddr_2|NetColor=$00FF6EFF
+Net16=NetName=MUXEn|NetColor=$00FF6EFF
+Net17=NetName=NetC21_1|NetColor=$006EFF6E
+Net18=NetName=NetDA11_7|NetColor=$006EFF6E
+Net19=NetName=NetDA12_3|NetColor=$00FFFF6E
+Net20=NetName=PWR_EN|NetColor=$00FF6EFF
+Net21=NetName=SCL|NetColor=$00FF6EFF
+Net22=NetName=SCL_LF|NetColor=$00FF6EFF
+Net23=NetName=SDA|NetColor=$00FF6EFF
+Net24=NetName=SDA_LF|NetColor=$00FF6EFF
+Net25=NetName=SW|NetColor=$00FF6EFF
 
 [Comparison Options]
 ComparisonOptions0=Kind=Net|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
